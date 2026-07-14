@@ -1,0 +1,6 @@
+
+# Original AutoMod models
+data/raw/
+
+# Generated files
+generated/*.json
