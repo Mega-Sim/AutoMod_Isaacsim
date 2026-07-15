@@ -3,4 +3,8 @@
 data/raw/
 
 # Generated files
-generated/*.json
+# generated/*.json  # USD conversion outputs included
+
+# Python cache
+__pycache__/
+*.pyc
