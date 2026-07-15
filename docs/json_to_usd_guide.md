@@ -35,14 +35,39 @@ python3 scripts/json_to_usd.py \
 |---|---|---|
 | `--input` | (필수) | 레이아웃 JSON 파일 |
 | `--output` | (필수) | 출력 USD 파일 (`.usda`=텍스트, `.usd`/`.usdc`=바이너리) |
-| `--path-width-m` | 0.05 | 가이드패스 커브 표시 폭 (m) |
-| `--edge-width-m` | 0.03 | 그래프 엣지 커브 표시 폭 (m) |
-| `--cp-radius-m` | 0.15 | 컨트롤포인트 마커(구) 반지름 (m) |
+| `--path-width-m` | 자동 | 가이드패스 커브 표시 폭 (m) |
+| `--edge-width-m` | 자동 | 그래프 엣지 커브 표시 폭 (m) |
+| `--cp-radius-m` | 자동 | 컨트롤포인트 마커(구) 반지름 (m) |
 | `--no-edges` | - | 그래프 엣지 프림 생략 (파일 축소) |
 | `--ground` | - | 레이아웃 크기에 맞는 바닥 평면 추가 |
 | `--z-offset-m` | 0.0 | 레이아웃 Z 높이 (예: OHT 레일 높이) |
 
 OHT처럼 천장 주행 시스템이면 `--z-offset-m 4.5` 등으로 레일 높이를 지정하면 됩니다.
+
+### 자동 스케일 (visualization)
+
+Isaac Sim은 BasisCurves 폭과 마커 크기를 **월드 단위(m)**로 렌더링하므로,
+큰 레이아웃에서 고정 폭을 쓰면 선이 실오라기처럼 보이지 않습니다. 폭/반지름
+옵션을 지정하지 않으면 레이아웃 대각선 크기에 비례해 자동 계산됩니다:
+
+- 가이드패스 폭 ≈ 대각선 / 1000 (약 400m 레이아웃 → 0.39m)
+- 컨트롤포인트 마커 반지름 ≈ 대각선 / 500 (약 400m → 0.78m)
+
+특정 값을 강제하려면 `--path-width-m` 등으로 직접 지정하면 됩니다.
+
+## 시각화 검증 (USD 프리뷰)
+
+Isaac Sim을 열기 전에, 생성된 USD에서 지오메트리를 직접 읽어 상면도 PNG로
+확인할 수 있습니다 (USD 파일 자체의 정확성을 round-trip으로 검증):
+
+```bash
+python3 scripts/render_usd_preview.py \
+  --usd generated/basic_model_layout.usd \
+  --output generated/basic_model_layout_preview.png
+```
+
+`matplotlib`이 필요하며, 가이드패스(파랑)·그래프 엣지(주황선)·컨트롤포인트
+(주황점)를 함께 표시합니다.
 
 ## 2. 생성되는 USD 구조
 

@@ -177,15 +177,40 @@ def cp_type_color(cp_type: str) -> Tuple[float, float, float]:
 # Stage building
 # ---------------------------------------------------------------------------
 
+def layout_diagonal_m(data: Dict[str, Any]) -> float:
+    """Bounding-box diagonal of the layout in meters (0 if no nodes)."""
+    nodes = data.get("nodes", [])
+    if not nodes:
+        return 0.0
+    xs = [n["position_m"]["x"] for n in nodes]
+    ys = [n["position_m"]["y"] for n in nodes]
+    return math.hypot(max(xs) - min(xs), max(ys) - min(ys))
+
+
 def build_stage(data: Dict[str, Any], output: str, *,
-                path_width_m: float = 0.05,
-                edge_width_m: float = 0.03,
-                cp_radius_m: float = 0.15,
-                node_size_m: float = 0.08,
+                path_width_m: Optional[float] = None,
+                edge_width_m: Optional[float] = None,
+                cp_radius_m: Optional[float] = None,
+                node_size_m: Optional[float] = None,
                 include_edges: bool = True,
                 include_ground: bool = False,
                 z_paths_m: float = 0.0) -> Usd.Stage:
-    """Build and save a USD stage from layout JSON data."""
+    """Build and save a USD stage from layout JSON data.
+
+    Width/radius parameters left as None are auto-scaled from the layout
+    diagonal so geometry stays visible in Isaac Sim at any layout size.
+    """
+    # Auto-scale visualization sizes so they are visible at the layout's scale.
+    diag = layout_diagonal_m(data) or 100.0
+    if path_width_m is None:
+        path_width_m = round(diag / 1000.0, 3)   # ~0.4m for a 400m layout
+    if edge_width_m is None:
+        edge_width_m = round(diag / 1500.0, 3)   # slightly thinner than paths
+    if cp_radius_m is None:
+        cp_radius_m = round(diag / 500.0, 3)     # ~0.8m for a 400m layout
+    if node_size_m is None:
+        node_size_m = round(diag / 700.0, 3)
+
     stage = Usd.Stage.CreateNew(output)
     UsdGeom.SetStageUpAxis(stage, UsdGeom.Tokens.z)
     UsdGeom.SetStageMetersPerUnit(stage, 1.0)
@@ -333,12 +358,15 @@ def main() -> int:
     parser.add_argument("--input", required=True, help="Layout JSON file")
     parser.add_argument("--output", required=True,
                         help="Output USD file (.usda text / .usd or .usdc binary)")
-    parser.add_argument("--path-width-m", type=float, default=0.05,
-                        help="Guide path curve width in meters (default: 0.05)")
-    parser.add_argument("--edge-width-m", type=float, default=0.03,
-                        help="Edge curve width in meters (default: 0.03)")
-    parser.add_argument("--cp-radius-m", type=float, default=0.15,
-                        help="Control point marker radius in meters (default: 0.15)")
+    parser.add_argument("--path-width-m", type=float, default=None,
+                        help="Guide path curve width in meters "
+                             "(default: auto-scaled from layout size)")
+    parser.add_argument("--edge-width-m", type=float, default=None,
+                        help="Edge curve width in meters "
+                             "(default: auto-scaled from layout size)")
+    parser.add_argument("--cp-radius-m", type=float, default=None,
+                        help="Control point marker radius in meters "
+                             "(default: auto-scaled from layout size)")
     parser.add_argument("--no-edges", action="store_true",
                         help="Skip graph edge prims (smaller file)")
     parser.add_argument("--ground", action="store_true",
