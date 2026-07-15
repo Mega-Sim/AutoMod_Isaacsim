@@ -24,3 +24,19 @@ individually addressable station markers. See
 [`docs/control_point_region_usd.md`](docs/control_point_region_usd.md) for the
 selection rule, Isaac Sim loading steps, and the boundary of this development
 stage.
+
+## Configured JSON to USD layout
+
+`scripts/json_to_usd.py` is the configured generation entry point. It keeps the
+reviewed control-point region, reads rail and station-asset settings from
+`config/layout_assets.json`, places all 173 stations with their AutoMod tangent
+directions, and generates `generated/basic_model_layout.usda`.
+
+```bash
+python3 scripts/json_to_usd.py
+```
+
+The committed station mappings reference five local placeholder USD assets, so
+the stage opens without missing references before verified equipment models are
+available. See [`docs/json_to_usd.md`](docs/json_to_usd.md) for configuration,
+Isaac Sim loading, and verification details.
