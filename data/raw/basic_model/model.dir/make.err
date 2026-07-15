@@ -1,0 +1,14 @@
+Processing build commands for the model model...
+model~model.c
+model~init1.c
+vehicle.c
+init.c
+logic.c
+photoeye.c
+reroute.c
+logic_multi.c
+Linking model64.dll...
+   Creating library model64.lib and object model64.exp
+Generating model.exe...
+        1개 파일이 복사되었습니다.
+
