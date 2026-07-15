@@ -1,0 +1,102 @@
+# Control-point-dense region USD preview
+
+`scripts/layout_json_to_usda.py` converts only the control-point-dense area of
+`generated/basic_model_layout.json` into an Isaac Sim-compatible ASCII USD.
+It intentionally excludes the other spatially separated layout drawings.
+
+## Region selection
+
+The selection is data-driven rather than a manually copied screenshot box:
+
+1. Read every `control_points[].position_m` coordinate.
+2. Calculate the minimum and maximum XY coordinates.
+3. Add a 5 m margin on all four sides.
+4. Clip every sampled `source_paths[].polyline_m` segment at that rectangle.
+5. Keep the control points, routing points, and stations inside the rectangle.
+
+For the committed SDI basic layout, the resulting rectangle is:
+
+```text
+min X = -118.51592522378684 m
+min Y =  -96.24273 m
+max X =   -7.82 m
+max Y =  -11.894719000000002 m
+```
+
+The generated preview contains:
+
+- 322 source guide paths, clipped into 322 USD curves
+- 468 control-point markers
+- 295 routing control points represented within the control-point set
+- 173 individually addressable station marker prims
+
+This matches the lower-left, red-marked region of the reviewed layout and
+excludes the three control-point-free layout groups.
+
+## Generate the USD
+
+No external Python package is required because the converter writes standard
+USDA text directly.
+
+```bash
+python3 scripts/layout_json_to_usda.py \
+  --input generated/basic_model_layout.json \
+  --output generated/basic_model_control_point_region.usda
+```
+
+Optional settings:
+
+- `--margin-m`: selection margin around the control-point bounds, default 5 m.
+- `--track-z-m`: preview elevation, default 0 m.
+
+The AutoMod `pm.asy` file does not contain a physical overhead-rail elevation.
+Do not treat `upz` as height. Set `--track-z-m` only when a verified rail height
+is available.
+
+## Open in Isaac Sim
+
+1. Start Isaac Sim.
+2. Select **File > Open**.
+3. Open `generated/basic_model_control_point_region.usda`.
+4. In the Stage tree, expand `/World/ControlPointRegion`.
+
+The generated stage contains:
+
+- `GuidePaths`: blue batched `BasisCurves`
+- `ControlPoints`: red batched `Points`
+- `Stations`: station `Xform` prims with colored sphere markers
+
+Each station prim retains its AutoMod station ID, station type, source path ID,
+graph node ID, and tangent yaw as custom USD properties. The station `Xform`
+and marker can therefore be replaced by an equipment, UTB, park, or OHT-related
+USD reference in the next development stage.
+
+## Current development boundary
+
+This stage completes the pre-modeling layout handoff:
+
+- control-point region selection and guide-path clipping
+- meter-based, Z-up USD stage generation
+- guide-path and control-point visualization
+- station position and direction authoring
+- reproducible generated USD and unit tests
+
+The following items are deliberately not implemented yet:
+
+- physical rail mesh generation and collision
+- equipment, UTB, stocker, and OHT asset references
+- OHT routing, animation, physics, and collision avoidance
+- correction of disconnected AutoMod path groups
+
+These belong to the next modeling and simulation stage and require verified
+asset files, forward-axis conventions, rail height, and path-transition rules.
+
+## Verification
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+
+The tests verify the exact selected bounds and counts, clipping at the region
+boundary, finite USDA serialization, required USD prims and metadata, and byte-
+for-byte reproducibility of the committed generated file.

@@ -6,3 +6,21 @@
 
 AutoMod의 레이아웃을 json파일로 변환하여 isaacsim 모델링 재료에 활용할 개발 방향의 메인 Branch입니다.
 - 2개 버전으로 개발
+
+## Control-point region USD preview
+
+The repository includes a focused Isaac Sim preview of the control-point-dense
+area in the SDI basic model. The other spatially separated layout drawings are
+excluded. Regenerate the committed ASCII USD with:
+
+```bash
+python3 scripts/layout_json_to_usda.py \
+  --input generated/basic_model_layout.json \
+  --output generated/basic_model_control_point_region.usda
+```
+
+The result contains clipped guide-path curves, all control-point markers, and
+individually addressable station markers. See
+[`docs/control_point_region_usd.md`](docs/control_point_region_usd.md) for the
+selection rule, Isaac Sim loading steps, and the boundary of this development
+stage.
