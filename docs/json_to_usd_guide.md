@@ -174,12 +174,60 @@ usdcat generated/basic_model_layout.usd | head -50
 
 레이아웃 범위: 약 289m × 280m (X: -166.7 ~ 122.2, Y: -96.2 ~ 183.7)
 
+## 6. 차량 스폰 (로드맵 1단계, 구현됨)
+
+`scripts/spawn_vehicles.py`가 레이아웃 USD의 fleet 메타데이터
+(`/World/Vehicles/<type>`의 `automod:numVehicles`)와 컨트롤포인트를 읽어
+차량 프림을 배치합니다. 레이아웃 USD는 **읽기만** 하고, 차량은 별도의
+출력 스테이지에 쓰므로 레이아웃 파일은 변경되지 않습니다.
+
+### 스탠드얼론 (Isaac Sim GUI에서 바로 열 수 있는 fleet USD 생성)
+
+```bash
+python3 scripts/spawn_vehicles.py \
+  --layout generated/basic_model_layout.usd \
+  --output generated/basic_model_fleet.usd
+```
+
+→ 출력 USD는 레이아웃을 `/World/AutoModLayout`로 참조하고 차량을
+`/World/Fleet/<type>/<type>_NNNN` 아래에 배치합니다. Isaac Sim에서
+`File > Open`으로 이 fleet USD를 열면 레이아웃+차량이 함께 보입니다.
+basic_model 기준 EVL 150대가 스폰됩니다(각 차량은 서로 다른 컨트롤포인트에
+배치, 차체 방향은 CP 접선 yaw 적용).
+
+### 옵션
+
+| 옵션 | 설명 |
+|---|---|
+| `--num N --type EVL` | fleet 메타데이터 대신 특정 타입 N대 강제 스폰 |
+| `--at Park,DefaultControlPoint` | 지정한 CP 타입 위에만 스폰 (기본: 전체 CP) |
+| `--asset /path/veh.usd` | 박스 프록시 대신 실제 차량 USD 에셋 참조 |
+| `--size L W H` | 박스 프록시 크기(m), 기본 1.2×0.7×0.4 |
+| `--rigid-body` | RigidBody+Collision API 적용 (물리 구동 준비, PhysicsScene 필요) |
+| `--max N` | 전체 스폰 수 상한 (빠른 프리뷰용) |
+| `--z-offset-m` | 차량 Z 높이 (예: OHT 레일 높이) |
+
+basic_model의 CP 타입: `Avoid(140) dummy(80) UTB(77) DefaultControlPoint(76)
+steer(67) Park(13) high_out(8) high_in(7)`
+
+### Isaac Sim Script Editor에서 라이브 스테이지에 스폰
+
+```python
+from spawn_vehicles import spawn_vehicles
+import omni.usd
+spawn_vehicles(omni.usd.get_context().get_stage())
+```
+
+각 차량 프림에는 `automod:vehicleType`, `automod:homeControlPoint`,
+`automod:spawnIndex` 어트리뷰트가 붙어 주행 로직에서 시작 지점을 조회할 수
+있습니다.
+
 ## 다음 단계 (로드맵)
 
-1. **차량 스폰**: `vehicles[].numveh`에 따라 컨트롤포인트/파크 지점에 차량
-   프림(참조 에셋) 인스턴싱
+1. ~~**차량 스폰**~~ ✅ `scripts/spawn_vehicles.py` (위 6절)
 2. **주행 로직**: `build_edge_graph()` 기반 경로 탐색 + 엣지 폴리라인을 따라
-   차량 이동 (one_way/direction 제약 반영)
+   차량 이동 (one_way/direction 제약 반영). 각 차량의 `automod:homeControlPoint`가
+   시작 노드.
 3. **스테이션 분류**: `control_points[].type` 기반 분류 규칙을 정의해
    `stations` 채우기 (현재 0개)
 4. **AutoMod 로직 연동**: model.dir의 이산 이벤트 로직과 Isaac Sim 물리
